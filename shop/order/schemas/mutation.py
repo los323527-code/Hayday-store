@@ -1,0 +1,83 @@
+import graphene
+
+from core.exceptions import UNAUTHENTICATED, UNAUTHORIZED
+from order.schemas.schema import OrderStatusUpdateInput
+from order.services import order_create, order_delete, \
+    order_fulfilment_status_update
+from store.services import can_manage_store
+
+__all__ = [
+    "OrderCreateMutation",
+    "Mutation"
+]
+
+
+class OrderCreateMutation(graphene.Mutation):
+    order = graphene.Field("order.schemas.OrderType")
+    payment_provider = graphene.String()
+    payment_info = graphene.JSONString()
+
+    class Arguments:
+        cart_id = graphene.UUID(required=True)
+        store_id = graphene.UUID(required=True)
+        payment_method_id = graphene.UUID(required=True)
+
+    def mutate(self, info, cart_id, store_id, payment_method_id, **kwargs):
+        user = info.context.user
+        if not user.is_authenticated:
+            raise UNAUTHENTICATED()
+
+        order, provider, payment_info = order_create(
+            user=user,
+            cart_id=cart_id,
+            store_id=store_id,
+            payment_method_id=payment_method_id
+        )
+        return OrderCreateMutation(order=order, payment_provider=provider, payment_info=payment_info)
+
+
+class OrderUpdateMutation(graphene.Mutation):
+    order = graphene.Field("order.schemas.OrderType")
+
+    class Arguments:
+        input = OrderStatusUpdateInput(required=True)
+
+    def mutate(self, info, input, **kwargs):
+        user = info.context.user
+
+        if not user.is_authenticated:
+            raise UNAUTHENTICATED()
+
+        store_id = input.pop("store_id")
+
+        if not can_manage_store(user=user, store_id=store_id):
+            raise UNAUTHORIZED()
+
+        order = order_fulfilment_status_update(**input)
+        return OrderUpdateMutation(order=order)
+
+
+class OrderDeleteMutation(graphene.Mutation):
+    success = graphene.Boolean()
+
+    class Arguments:
+        order_id = graphene.UUID(required=True)
+        store_id = graphene.UUID(required=True)
+
+    def mutate(self, info, order_id, store_id, **kwargs):
+        user = info.context.user
+
+        if not user.is_authenticated:
+            raise UNAUTHENTICATED()
+
+        if not can_manage_store(user=user, store_id=store_id):
+            raise UNAUTHORIZED()
+
+        success = order_delete(order_id=order_id)
+        return OrderDeleteMutation(success=success)
+
+
+class Mutation(graphene.ObjectType):
+    order_create = OrderCreateMutation.Field()
+    order_status_update = OrderUpdateMutation.Field()
+    order_delete = OrderDeleteMutation.Field()
