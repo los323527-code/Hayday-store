@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "version": "2.0.0",
+  "description": "Hayday Store - modern online store platform with Telegram integration",
+  "main": "index.js",
+  "repository": "https://github.com/mattaliev/hayday-store.git",
+  "author": "toamatvey@gmail.com",
+  "license": "MIT",
+  "scripts": {
+    "build:tg": "yarn workspace @hayday-store/tg-shop build",
+    "build:admin": "yarn workspace @hayday-store/admin-shop build",
+    "build:lib": "yarn workspace @supastore/lib build",
+    "lint:tg": "yarn workspace @hayday-store/tg-shop lint",
+    "lint:admin": "yarn workspace @hayday-store/admin-shop lint",
+    "lint": "yarn workspace @hayday-store/tg-shop lint && yarn workspace @hayday-store/admin-shop lint",
+    "dev:tg": "yarn workspace @hayday-store/tg-shop dev",
+    "dev:admin": "yarn workspace @hayday-store/admin-shop dev",
+    "lint:fix": "yarn workspace @hayday-store/admin-shop lint:fix && yarn workspace @hayday-store/tg-shop lint:fix",
+    "prepare": "husky"
+  },
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ]
+}

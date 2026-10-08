@@ -1,0 +1,151 @@
+"use client";
+
+import { PaymentStatus } from "@ditch/lib";
+import { LoaderCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
+import { twMerge } from "tailwind-merge";
+
+import { updatePaymentStatus } from "@/components/payment/actions";
+import { useStore } from "@/components/store/store-context";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger
+} from "@/components/ui/drawer";
+import { Label } from "@/components/ui/label";
+
+export default function MarkAsPaidDrawerDialog({
+  paymentId
+}: {
+  paymentId: string;
+}) {
+  const isDesktop =
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 768px)").matches
+      : false;
+  const [open, setOpen] = useState<boolean>(false);
+  const t = useTranslations("OrderEditPage.OrderPayment.MarkAsPaid");
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button size={"sm"} type={"button"}>
+            {t("markAsPaidButton")}
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("markingAsPaidTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("markingAsPaidDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <MarkAsPaidForm paymentId={paymentId} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button size={"sm"} type={"button"}>
+          {t("markAsPaidButton")}
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader className="text-left">
+          <DrawerTitle>{t("markingAsPaidTitle")}</DrawerTitle>
+          <DrawerDescription>{t("markingAsPaidDescription")}</DrawerDescription>
+        </DrawerHeader>
+        <MarkAsPaidForm paymentId={paymentId} className={"px-4"} />
+        <DrawerFooter className={"pt-2"}>
+          <DrawerClose asChild>
+            <Button variant="outline" size="sm">
+              {t("cancel")}
+            </Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function MarkAsPaidForm({
+  paymentId,
+  className
+}: {
+  paymentId: string;
+  className?: string;
+}) {
+  const storeId = useStore();
+  const [formState, formAction] = useFormState(updatePaymentStatus, null);
+  const t = useTranslations("OrderEditPage.OrderPayment.MarkAsPaid");
+
+  return (
+    <form
+      action={formAction}
+      className={twMerge("grid items-start gap-4", className)}
+    >
+      <input type={"hidden"} name={"payment-id"} value={paymentId} />
+      <input
+        type={"hidden"}
+        name={"payment-status"}
+        value={PaymentStatus.PAID}
+      />
+      <div className="flex items-center space-x-2">
+        <Checkbox id="notify-user" name="notify-user" />
+        <Label htmlFor="notify-user">{t("notifyAboutReceivingPayment")}</Label>
+      </div>
+      {formState?.error && (
+        <p className={"text-destructive text-end text-xs"}>
+          {t("markAsPaidError")}
+        </p>
+      )}
+      <SubmitButton />
+    </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  const t = useTranslations("OrderEditPage.OrderPayment.MarkAsPaid");
+
+  if (pending) {
+    return (
+      <Button
+        className={"cursor-not-allowed flex items-center gap-1"}
+        disabled
+        size={"sm"}
+        onClick={(e) => e.preventDefault()}
+      >
+        <LoaderCircle className="animate-spin" />
+        {t("markingAsPaidButton")}
+      </Button>
+    );
+  }
+
+  return (
+    <Button size="sm" type={"submit"}>
+      {t("markAsPaidButton")}
+    </Button>
+  );
+}
