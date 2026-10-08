@@ -32,7 +32,7 @@ grpcio-status==1.60.1
 gunicorn>=23.0.0
 idna==3.6
 packaging==23.2
-pillow==10.3.0
+pillow==11.3.0
 promise==2.3
 proto-plus==1.23.0
 protobuf==4.25.3
